@@ -1,33 +1,45 @@
-"""softdesk URL Configuration
+""" softdesk URL Configuration.
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-from django.urls import include, path
+
+from django.urls import path
 from issuetracker import views
+from rest_framework import routers
 
+"""
 app_name = "issuetracker"
 
+urlpatterns = []
+
+"""
+
+router = routers.DefaultRouter(trailing_slash=False)
+router.register("", views.AuthViewSet, basename="")
+
+
 urlpatterns: list[path] = [
-    path("api-auth/",
-         include("rest_framework.urls", namespace="rest_framework")),
-    path("projects/",
-         views.ListProjectLoggedInUser.as_view(),
-         name="list all projects"),
-    path("projects/",
+    # I named the two below endpoints in a different manner for ease.
+    # However, later I'll have to create a single view that handles the
+    # post and get methods AND a single path that routes both types of
+    # requests. The problem with two urls having the same name is that
+    # the rest framework always only checks the first. Thus, if the
+    # first one handles the GET method and the second one the POST
+    # method, the POST method will never be handled.
+
+    path("projects/create/",
          views.CreateProject.as_view(),
          name="create project"),
-    path("projects/<int:pk>",
+    path("projects/list_projects/",
+         views.ListProjectLoggedInUser.as_view(),
+         name="list all projects"),
+    path("projects/<int:pk>/",
          views.GetSpecificProject.as_view(),
          name="retrieve specific project"),
+    path("projects/<int:pk>/",
+         views.UpdateProject.as_view(),
+         name="update specific project")
 ]
+
+urlpatterns += router.urls
+
+endpoints: 1, 2, 3, 4, 5, 
+"""
