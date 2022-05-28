@@ -1,19 +1,15 @@
-""" softdesk URL Configuration.
+""" softdesk URL Configuration."""
 
 
 from django.urls import path
 from issuetracker import views
 from rest_framework import routers
 
-"""
+
 app_name = "issuetracker"
 
-urlpatterns = []
-
-"""
-
 router = routers.DefaultRouter(trailing_slash=False)
-router.register("", views.AuthViewSet, basename="")
+router.register("", views.AuthViewSet, basename="auth")
 
 
 urlpatterns: list[path] = [
@@ -24,22 +20,25 @@ urlpatterns: list[path] = [
     # the rest framework always only checks the first. Thus, if the
     # first one handles the GET method and the second one the POST
     # method, the POST method will never be handled.
-
-    path("projects/create/",
+    path("projects/create",
          views.CreateProject.as_view(),
          name="create project"),
-    path("projects/list_projects/",
+    path("projects/list_projects",
          views.ListProjectLoggedInUser.as_view(),
-         name="list all projects"),
-    path("projects/<int:pk>/",
-         views.GetSpecificProject.as_view(),
-         name="retrieve specific project"),
-    path("projects/<int:pk>/",
-         views.UpdateProject.as_view(),
-         name="update specific project")
+         name="projects"),
+    path("projects/add_user",
+         views.AddContributorProject.as_view(),
+         name="Add collaborator to a project")
 ]
 
 urlpatterns += router.urls
 
-endpoints: 1, 2, 3, 4, 5, 
+""""
+path("projects/<int:pk>/",
+     views.GetSpecificProject.as_view(),
+     name="retrieve specific project"),
+path("projects/<int:pk>/",
+     views.UpdateProject.as_view(),
+     name="update specific project")
 """
+

@@ -23,6 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 
 
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'issuetracker.apps.IssuetrackerConfig'
 ]
 
@@ -135,7 +137,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.TokenAuthentication"
-    ]
+    ],
 }
 
-LOGIN_REDIRECT_URL = reverse_lazy("softdesk:projects")
+LOGIN_REDIRECT_URL = reverse_lazy("issuetracker:projects")
+
+APPEND_SLASH = False

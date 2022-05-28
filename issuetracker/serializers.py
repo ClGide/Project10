@@ -1,7 +1,8 @@
 from django.contrib.auth.models import User
-from .models import Projects, Issues, Comments
+from .models import Projects, Issues, Comments, Contributors
 from rest_framework.authtoken.models import Token
 from rest_framework import serializers
+from django.contrib.auth import password_validation
 
 
 class UserLoginSerializer(serializers.Serializer):
@@ -23,10 +24,13 @@ class AuthUserSerializer(serializers.ModelSerializer):
         model = User
         # I didn't add "id", but IMO its auto done. I also didn't
         # add is_active, is_staff as I find this useless.
-        fields = ["username", "first_name", "last_name", "email"]
+        fields = ["username", "first_name", "last_name", "email", "auth_token"]
 
     def get_auth_token(self, obj):
-        token = Token.objects.create(user=obj)
+        try:
+            token = Token.objects.get(user_id=obj.id)
+        except Token.DoesNotExist:
+            token = Token.objects.create(user=obj)
         return token.key
 
 
@@ -35,12 +39,16 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ["username", "first_name", "last_name", "email", "password"]
 
+    @staticmethod
+    def validate_password(value):
+        password_validation.validate_password(value)
+        return value
+
 
 class EmptySerializer(serializers.Serializer):
     pass
 
 
-"""
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Projects
@@ -52,7 +60,8 @@ class ContributorSerializer(serializers.ModelSerializer):
         model = Contributors
         # the user should enter the username and the app should
         # find the user_id. Same for the project_id.
-        fields = ["permission"]
+        fields = ["permission", "user_id", "project_id"]
+
 
 class IssueSerializer(serializers.ModelSerializer):
     class Meta:
@@ -63,6 +72,7 @@ class IssueSerializer(serializers.ModelSerializer):
         fields = ["title", "description", "tag", "priority", "status"]
 
 
+"""
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         # author_user_id should be auto filled.

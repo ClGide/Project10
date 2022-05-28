@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
 
 
 class Projects(models.Model):
@@ -22,8 +23,8 @@ class Contributors(models.Model):
     # read_only access to the users list, create Issues
     PROJECT_COLLABORATOR = ""
     PERMISSION_CHOICES = [
-        (PROJECT_OWNER, "owner"),
-        (PROJECT_COLLABORATOR, "collaborator")
+        ("owner", PROJECT_OWNER),
+        ("collaborator", PROJECT_COLLABORATOR)
     ]
     permission = models.CharField(
         choices=PERMISSION_CHOICES,
@@ -73,3 +74,20 @@ class Comments(models.Model):
     # a completely modified comment isn't the same. Thus, a last modified
     # timestamps is more adapted.
     created_time = models.DateTimeField(blank=True, auto_now=True)
+
+
+def model_created(**kwargs):
+    # whenever an user creates a project, he becomes the owner of that
+    # project. We thus need a contributor instance with owner privileges.
+    # Initially, before **kwargs there was a sender arg.
+    instance = kwargs["instance"]
+    if kwargs["created"]:
+        owner = Contributors(
+            permission='owner',
+            user_id=instance.author_user_id,
+            project_id=instance)
+        owner.save()
+
+
+post_save.connect(model_created, sender=Projects)
+
