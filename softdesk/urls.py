@@ -26,9 +26,17 @@ urlpatterns: list[path] = [
     path("projects/list_projects",
          views.ListProjectLoggedInUser.as_view(),
          name="projects"),
+    path("projects/<int:pk>",
+         views.GetProject.as_view(
+             {"get": "retrieve",
+              "put": "update",
+              "delete": "destroy"}
+         ),
+         name="get/update/delete project"),
+
     path("projects/add_user",
          views.AddContributorProject.as_view(),
-         name="Add collaborator to a project")
+         name="Add collaborator to a project"),
 ]
 
 urlpatterns += router.urls

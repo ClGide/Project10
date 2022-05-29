@@ -84,6 +84,38 @@ class ListProjectLoggedInUser(generics.ListCreateAPIView):
     http_method_names = ['get']
 
 
+class GetProject(GenericViewSet):
+    serializer_class = ProjectSerializer
+    http_method_names = ['get', 'put', 'delete']
+
+    def retrieve(self, request, *args, **kwargs):
+    # Although some args aren't used in the method body, I need to
+    # declare them. The methods of this class are generic methods.
+    # Thus, I do not completely control how they're called by Django
+        pk = kwargs["pk"]
+        project = Projects.objects.get(id=pk)
+        serializer = self.get_serializer(project)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        project = Projects.objects.get(id=pk)
+        serializer = self.serializer_class(project, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        if getattr(project, "_prefetched_objects_cache", None):
+        # If 'prefetch_related' has been applied to a queryset, we need to
+        # forcibly invalidate the prefetch cache on the instance.
+            project._prefetched_object_cache = {}
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        project = Projects.objects.get(id=pk)
+        project.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class AddContributorProject(generics.CreateAPIView):
     serializer_class = ContributorSerializer
     http_method_names = ["post"]
