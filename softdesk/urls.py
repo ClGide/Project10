@@ -9,6 +9,7 @@ from rest_framework import routers
 app_name = "issuetracker"
 
 router = routers.DefaultRouter(trailing_slash=False)
+# endpoint 1 and 2
 router.register("", views.AuthViewSet, basename="auth")
 
 
@@ -20,12 +21,18 @@ urlpatterns: list[path] = [
     # the rest framework always only checks the first. Thus, if the
     # first one handles the GET method and the second one the POST
     # method, the POST method will never be handled.
-    path("projects/create",
-         views.CreateProject.as_view(),
-         name="create project"),
+
+    # endpoint 3
     path("projects/list_projects",
          views.ListProjectLoggedInUser.as_view(),
          name="projects"),
+
+    # endpoint 4
+    path("projects/create",
+         views.CreateProject.as_view(),
+         name="create project"),
+
+    # endpoint 5, 6, 7
     path("projects/<int:pk>",
          views.GetProject.as_view(
              {"get": "retrieve",
@@ -34,19 +41,48 @@ urlpatterns: list[path] = [
          ),
          name="get/update/delete project"),
 
+    # endpoint 8
     path("projects/add_user",
          views.AddContributorProject.as_view(),
          name="Add collaborator to a project"),
+
+    # endpoint 9
+    path("projects/<int:pk>/users",
+         views.ListProjectCollaborators.as_view(),
+         name="list all collaborators in Project"),
+
+    # endpoint 10
+    path("projects/<int:project_pk>/users/<int:user_pk>",
+         views.DeleteContributorProject.as_view(),
+         name="delete a collaborator from a project"),
+
+    # endpoint 11, 12, 13, 14
+    path("projects/<int:pk>/issues",
+         views.GetIssue.as_view(
+            {"get": "get",
+             "post": "create"}
+         ),
+         name="get issues from a project/create issue"),
+    path("projects/issues/<int:pk>",
+         views.GetIssue.as_view(
+            {"put": "update",
+             "delete": "destroy"}
+         ),
+         name="update/delete issue in a project"),
+
+    # endpoint 15, 16, 17, 18
+    path("projects/issues/<int:pk>/comments",
+         views.GetComment.as_view(
+             {"get": "get",
+              "post": "create"}
+         ),
+         name="get issues from a project/create issue"),
+    path("projects/issues/comments/<int:pk>",
+         views.GetComment.as_view(
+            {"put": "update",
+             "delete": "destroy"}
+         ),
+         name="update/delete issue in a project"),
 ]
 
 urlpatterns += router.urls
-
-""""
-path("projects/<int:pk>/",
-     views.GetSpecificProject.as_view(),
-     name="retrieve specific project"),
-path("projects/<int:pk>/",
-     views.UpdateProject.as_view(),
-     name="update specific project")
-"""
-

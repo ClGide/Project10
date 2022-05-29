@@ -4,13 +4,14 @@ from rest_framework.permissions import AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
+from rest_framework.views import APIView
 from rest_framework import generics
 from django.contrib.auth import authenticate, logout
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 
 from .models import Projects, Contributors, Issues, Comments
-from .serializers import EmptySerializer, UserLoginSerializer, AuthUserSerializer, UserRegisterSerializer
+from .serializers import EmptySerializer, UserLoginSerializer, CommentSerializer, AuthUserSerializer, UserRegisterSerializer, CustomUserSerializer
 from .serializers import IssueSerializer, ContributorSerializer, ProjectSerializer
 from .utils import create_user_account, get_and_authenticate_user
 
@@ -64,6 +65,12 @@ class AuthViewSet(GenericViewSet):
         return super().get_serializer_class()
 
 
+class ListProjectLoggedInUser(generics.ListCreateAPIView):
+    queryset = Projects.objects.all()
+    serializer_class = ProjectSerializer
+    http_method_names = ['get']
+
+
 class CreateProject(generics.CreateAPIView):
     serializer_class = ProjectSerializer
     http_method_names = ["post"]
@@ -76,12 +83,6 @@ class CreateProject(generics.CreateAPIView):
         return Response(serializer.data,
                         status=status.HTTP_201_CREATED,
                         headers=headers)
-
-
-class ListProjectLoggedInUser(generics.ListCreateAPIView):
-    queryset = Projects.objects.all()
-    serializer_class = ProjectSerializer
-    http_method_names = ['get']
 
 
 class GetProject(GenericViewSet):
@@ -138,24 +139,104 @@ class AddContributorProject(generics.CreateAPIView):
                         headers=headers)
 
 
+class ListProjectCollaborators(APIView):
+    http_method_names = ["get"]
 
-
-
-
-"""
-class GetSpecificProject(generics.RetrieveAPIView):
-    serializer_class = ProjectSerializer
-    http_method_names = ['get']
-
-    def retrieve(self, request, pk, **kwargs):
-        instance = Projects.objects.filter(id=pk)
-        serializer = self.get_serializer(instance[0])
+    def get(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        queryset = Contributors.objects.filter(project_id=pk)
+        serializer = ContributorSerializer(queryset, many=True)
         return Response(serializer.data)
 
 
-class UpdateProject(generics.UpdateAPIView):
-    serializer_class = ProjectSerializer
-    http_method_names = ['put']
+class DeleteContributorProject(generics.DestroyAPIView):
+    http_method_names = ["delete"]
 
-"""
+    def destroy(self, request, *args, **kwargs):
+        project_id = kwargs["project_pk"]
+        user_id = kwargs["user_pk"]
+        project = Contributors.objects.get(user_id=user_id,
+                                           project_id=project_id)
+        project.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+class GetIssue(GenericViewSet):
+    serializer_class = CommentSerializer
+    http_method_names = ['get', 'post', 'put', 'delete']
+
+    def get(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        queryset = Issues.objects.filter(project_id=pk)
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        pk = kwargs["pk"]
+        assignee_username = request.data["assignee_username"]
+        assignee_user = User.objects.get(username=assignee_username)
+        serializer.initial_data["project_id"] = pk
+        serializer.initial_data["author_user_id"] = request.user.id
+        serializer.initial_data["assignee_user_id"] = assignee_user.id
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data,
+                        status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        issue = Issues.objects.get(id=pk)
+        serializer = self.serializer_class(issue, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        if getattr(issue, "_prefetched_objects_cache", None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            issue._prefetched_object_cache = {}
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        issue = Issues.objects.get(id=pk)
+        issue.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GetComment(GenericViewSet):
+    serializer_class = CommentSerializer
+    http_method_names = ['get', 'post', 'put', 'delete']
+
+    def get(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        queryset = Comments.objects.filter(issue_id=pk)
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        pk = kwargs["pk"]
+        serializer.initial_data["issue_id"] = pk
+        serializer.initial_data["author_user_id"] = request.user.id
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data,
+                        status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        comment = Comments.objects.get(id=pk)
+        serializer = self.serializer_class(comment, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        if getattr(comment, "_prefetched_objects_cache", None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            comment._prefetched_object_cache = {}
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        comment = Comments.objects.get(id=pk)
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

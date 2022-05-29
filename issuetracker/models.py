@@ -43,10 +43,12 @@ class Contributors(models.Model):
 class Issues(models.Model):
     title = models.CharField(blank=False, max_length=32)
     description = models.CharField(blank=False, max_length=512)
-    tag = models.CharField(blank=False, max_length=32)
-    priority = models.CharField(blank=False, max_length=32)
-    project_id = models.ForeignKey(Projects, on_delete=models.CASCADE)
-    status = models.CharField(blank=False, max_length=32)
+    tag = models.CharField(blank=False, max_length=64)
+    priority = models.CharField(blank=False, max_length=64)
+    project_id = models.ForeignKey(Projects,
+                                   on_delete=models.CASCADE,
+                                   blank=True)
+    status = models.CharField(blank=False, max_length=64)
     # whenever two fields are related to the same model, there's going to
     # be a conflict in the reversing. In other words, the related_name
     # is set by default twice to the same value and User wouldn't know
@@ -70,7 +72,7 @@ class Comments(models.Model):
     # a comment is still useful even if the author's account was deleted
     author_user_id = models.ForeignKey(User, on_delete=models.SET_NULL,
                                        null=True)
-    issue_id = models.ForeignKey(Issues, on_delete=models.CASCADE)
+    issue_id = models.ForeignKey(Issues, on_delete=models.CASCADE, blank=True)
     # a completely modified comment isn't the same. Thus, a last modified
     # timestamps is more adapted.
     created_time = models.DateTimeField(blank=True, auto_now=True)

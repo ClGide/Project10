@@ -5,6 +5,12 @@ from rest_framework import serializers
 from django.contrib.auth import password_validation
 
 
+class CustomUserSerializer(serializers.ModelSerializer):
+    "for debugging purposes"
+    class Meta:
+        model = User
+        fields = ["id", "username"]
+
 class UserLoginSerializer(serializers.Serializer):
     # Used to validate data
     username = serializers.CharField(max_length=32, required=True)
@@ -69,15 +75,16 @@ class IssueSerializer(serializers.ModelSerializer):
         # author_user_id should be auto filled.
         # the user should enter the project title and the project_id should
         # be filled by the app.
-        fields = ["title", "description", "tag", "priority", "status"]
+        fields = [
+            "title", "description", "tag", "priority", "project_id", "status",
+            "author_user_id", "assignee_user_id"
+        ]
 
 
-"""
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         # author_user_id should be auto filled.
         # the user should enter the issue title and the app should
         # find issue_id.
         model = Comments
-        fields = ["description"]
-"""
+        fields = ["description", "author_user_id", "issue_id"]
