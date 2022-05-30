@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 
 from .models import Projects, Contributors, Issues, Comments
-from .serializers import EmptySerializer, UserLoginSerializer, CommentSerializer, AuthUserSerializer, UserRegisterSerializer, CustomUserSerializer
+from .serializers import EmptySerializer, UserLoginSerializer, CommentSerializer, AuthUserSerializer, UserRegisterSerializer
 from .serializers import IssueSerializer, ContributorSerializer, ProjectSerializer
 from .utils import create_user_account, get_and_authenticate_user
 

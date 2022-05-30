@@ -5,12 +5,6 @@ from rest_framework import serializers
 from django.contrib.auth import password_validation
 
 
-class CustomUserSerializer(serializers.ModelSerializer):
-    "for debugging purposes"
-    class Meta:
-        model = User
-        fields = ["id", "username"]
-
 class UserLoginSerializer(serializers.Serializer):
     # Used to validate data
     username = serializers.CharField(max_length=32, required=True)
@@ -21,7 +15,6 @@ class UserLoginSerializer(serializers.Serializer):
 
 class AuthUserSerializer(serializers.ModelSerializer):
     # Used to provide response
-
     # read-only field. Gets its value by calling the method it is
     # attached to. By default, get_<field_name>
     auth_token = serializers.SerializerMethodField()
