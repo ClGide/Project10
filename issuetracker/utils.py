@@ -1,15 +1,5 @@
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
-from rest_framework import serializers
-
-
-def get_and_authenticate_user(username, password):
-    user = authenticate(username=username, password=password)
-    if user is None:
-        raise serializers.ValidationError(
-            "invalid username/password. Please try again!"
-        )
-    return user
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 def create_user_account(username, email, password, first_name="",
@@ -22,3 +12,12 @@ def create_user_account(username, email, password, first_name="",
         password=password,
     )
     return user
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        "refresh": str(refresh),
+        "acess": str(refresh.access_token)
+    }

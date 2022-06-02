@@ -3,7 +3,6 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 from rest_framework import generics
 from django.contrib.auth import authenticate, logout
@@ -13,7 +12,7 @@ from django.core.exceptions import ImproperlyConfigured
 from .models import Projects, Contributors, Issues, Comments
 from .serializers import EmptySerializer, UserLoginSerializer, CommentSerializer, AuthUserSerializer, UserRegisterSerializer
 from .serializers import IssueSerializer, ContributorSerializer, ProjectSerializer
-from .utils import create_user_account, get_and_authenticate_user
+from .utils import create_user_account, get_tokens_for_user
 
 
 class AuthViewSet(GenericViewSet):
@@ -32,21 +31,23 @@ class AuthViewSet(GenericViewSet):
         # Note that without action our method wouldn't be routable.
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        """
-        username = request.POST["username"]
-        password = request.POST["password"]
-        """
-        user = get_and_authenticate_user(**serializer.validated_data)
-        data = AuthUserSerializer(user).data
+        print(f"this serializer:{serializer.validated_data}")
+        user = authenticate(request, **serializer.validated_data)
+        auth_serializer = AuthUserSerializer(user)
+        token = get_tokens_for_user(user)
+        data = {"user_data": auth_serializer.data,
+                "token": token}
         return Response(data=data, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False)
     def register(self, request):
+        print(f"user")
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = create_user_account(**serializer.validated_data)
-        data = AuthUserSerializer(user).data
-        return Response(data=data, status=status.HTTP_201_CREATED)
+        auth_serializer = AuthUserSerializer(user)
+        return Response(data=auth_serializer.data,
+                        status=status.HTTP_201_CREATED)
 
     @action(methods=['POST'], detail=False)
     def logout(self, request):

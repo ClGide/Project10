@@ -4,6 +4,12 @@
 from django.urls import path
 from issuetracker import views
 from rest_framework import routers
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView
+)
+from rest_framework.authtoken.views import obtain_auth_token
 
 
 app_name = "issuetracker"
@@ -83,6 +89,12 @@ urlpatterns: list[path] = [
              "delete": "destroy"}
          ),
          name="update/delete issue in a project"),
+
+    # jwt tokens
+    path('api/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/verify', TokenVerifyView.as_view(), name='token_verify')
+
 ]
 
 urlpatterns += router.urls

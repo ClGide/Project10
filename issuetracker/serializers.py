@@ -17,20 +17,11 @@ class AuthUserSerializer(serializers.ModelSerializer):
     # Used to provide response
     # read-only field. Gets its value by calling the method it is
     # attached to. By default, get_<field_name>
-    auth_token = serializers.SerializerMethodField()
-
     class Meta:
         model = User
         # I didn't add "id", but IMO its auto done. I also didn't
         # add is_active, is_staff as I find this useless.
-        fields = ["username", "first_name", "last_name", "email", "auth_token"]
-
-    def get_auth_token(self, obj):
-        try:
-            token = Token.objects.get(user_id=obj.id)
-        except Token.DoesNotExist:
-            token = Token.objects.create(user=obj)
-        return token.key
+        fields = ["username", "first_name", "last_name", "email"]
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
