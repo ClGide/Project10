@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from .models import Projects, Issues, Comments, Contributors
-from rest_framework.authtoken.models import Token
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import password_validation
 
 
@@ -13,17 +13,6 @@ class UserLoginSerializer(serializers.Serializer):
                                      write_only=True)
 
 
-class AuthUserSerializer(serializers.ModelSerializer):
-    # Used to provide response
-    # read-only field. Gets its value by calling the method it is
-    # attached to. By default, get_<field_name>
-    class Meta:
-        model = User
-        # I didn't add "id", but IMO its auto done. I also didn't
-        # add is_active, is_staff as I find this useless.
-        fields = ["username", "first_name", "last_name", "email"]
-
-
 class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -31,6 +20,10 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def validate_password(value):
+        # if you define a method named validate_<field_name>,
+        # django will use the return value as the value of that
+        # field.
+        print(f"value in serializer: {value}")
         password_validation.validate_password(value)
         return value
 

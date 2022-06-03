@@ -7,10 +7,11 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from django.contrib.auth import authenticate, logout
 from django.contrib.auth.models import User
+from django.forms import ValidationError
 from django.core.exceptions import ImproperlyConfigured
 
 from .models import Projects, Contributors, Issues, Comments
-from .serializers import EmptySerializer, UserLoginSerializer, CommentSerializer, AuthUserSerializer, UserRegisterSerializer
+from .serializers import EmptySerializer, UserLoginSerializer, CommentSerializer, UserRegisterSerializer
 from .serializers import IssueSerializer, ContributorSerializer, ProjectSerializer
 from .utils import create_user_account, get_tokens_for_user
 
@@ -29,24 +30,30 @@ class AuthViewSet(GenericViewSet):
         # collection. If it's intended for a single obj, set detail to
         # true, define the pk arg and use it to make the query.
         # Note that without action our method wouldn't be routable.
+
+        # validate data
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        print(f"this serializer:{serializer.validated_data}")
-        user = authenticate(request, **serializer.validated_data)
-        auth_serializer = AuthUserSerializer(user)
-        token = get_tokens_for_user(user)
-        data = {"user_data": auth_serializer.data,
-                "token": token}
-        return Response(data=data, status=status.HTTP_200_OK)
+
+        # checks user exists and has the right password
+        username, password = request.data["username"], request.data["password"]
+        user = authenticate(username=username, password=password)
+        if user is None:
+            raise ValidationError("username/password is false")
+
+        # returns JWT token
+        tokens = get_tokens_for_user(user)
+
+        return Response(data=tokens, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False)
     def register(self, request):
-        print(f"user")
+        print("something")
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = create_user_account(**serializer.validated_data)
-        auth_serializer = AuthUserSerializer(user)
-        return Response(data=auth_serializer.data,
+        tokens = get_tokens_for_user(user)
+        return Response(data=tokens,
                         status=status.HTTP_201_CREATED)
 
     @action(methods=['POST'], detail=False)
