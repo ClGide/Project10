@@ -11,9 +11,10 @@ from django.forms import ValidationError
 from django.core.exceptions import ImproperlyConfigured
 
 from .models import Projects, Contributors, Issues, Comments
-from .serializers import EmptySerializer, UserLoginSerializer, CommentSerializer, UserRegisterSerializer
+from .serializers import EmptySerializer, UserLoginSerializer, UserRegisterSerializer, CommentSerializer
 from .serializers import IssueSerializer, ContributorSerializer, ProjectSerializer
 from .utils import create_user_account, get_tokens_for_user
+from issuetracker.permissions import only_project_contributor_permission, only_obj_author_permission
 
 
 class AuthViewSet(GenericViewSet):
@@ -170,11 +171,13 @@ class DeleteContributorProject(generics.DestroyAPIView):
 
 
 class GetIssue(GenericViewSet):
-    serializer_class = CommentSerializer
+    serializer_class = IssueSerializer
     http_method_names = ['get', 'post', 'put', 'delete']
+    #permission_classes = [OnlyContributors]
 
     def get(self, request, *args, **kwargs):
         pk = kwargs["pk"]
+        only_project_contributor_permission(request, pk)
         queryset = Issues.objects.filter(project_id=pk)
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
@@ -182,6 +185,7 @@ class GetIssue(GenericViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         pk = kwargs["pk"]
+        only_project_contributor_permission(request, pk)
         assignee_username = request.data["assignee_username"]
         assignee_user = User.objects.get(username=assignee_username)
         serializer.initial_data["project_id"] = pk
@@ -217,6 +221,7 @@ class GetComment(GenericViewSet):
 
     def get(self, request, *args, **kwargs):
         pk = kwargs["pk"]
+        only_project_contributor_permission(request, pk)
         queryset = Comments.objects.filter(issue_id=pk)
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
@@ -224,6 +229,7 @@ class GetComment(GenericViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         pk = kwargs["pk"]
+        only_project_contributor_permission(request, pk)
         serializer.initial_data["issue_id"] = pk
         serializer.initial_data["author_user_id"] = request.user.id
         serializer.is_valid(raise_exception=True)
@@ -234,6 +240,7 @@ class GetComment(GenericViewSet):
     def update(self, request, *args, **kwargs):
         pk = kwargs["pk"]
         comment = Comments.objects.get(id=pk)
+        only_obj_author_permission(request, comment)
         serializer = self.serializer_class(comment, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -246,5 +253,6 @@ class GetComment(GenericViewSet):
     def destroy(self, request, *args, **kwargs):
         pk = kwargs["pk"]
         comment = Comments.objects.get(id=pk)
+        only_obj_author_permission(request, comment)
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

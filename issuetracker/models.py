@@ -19,9 +19,7 @@ class Projects(models.Model):
         blank=True,
         max_length=32
     )
-    # the author should be set by the app, never by the user.
     author_user_id = models.ForeignKey(User,
-                                       editable=False,
                                        null=False,
                                        blank=True,
                                        on_delete=models.CASCADE)
@@ -102,14 +100,10 @@ class Issues(models.Model):
     # be a conflict in the reversing. In other words, the related_name
     # is set by default twice to the same value and User wouldn't know
     # what to do if we didn't manually set related_name.
-    # Moreover, this field should never be set by the user. Thus, we set
-    # editable to false.
     author_user_id = models.ForeignKey(User,
                                        on_delete=models.CASCADE,
-                                       editable=False,
                                        null=False,
-                                       blank=True,
-                                       related_name="author")
+                                       blank=True)
     # when for some reason the assignee is deleted, the original author
     # becomes the assignee.
     assignee_user_id = models.ForeignKey(User,
@@ -124,17 +118,13 @@ class Issues(models.Model):
 class Comments(models.Model):
     description = models.CharField(blank=False, max_length=512)
     # a comment is still useful even if the author's account was deleted
-    # Moreover, below two fields should never be set by the user. Thus, we
-    # set editable to false.
     author_user_id = models.ForeignKey(User,
-                                       editable=False,
-                                       blank=True,
+                                       blank=False,
                                        on_delete=models.SET_NULL,
                                        null=True)
     issue_id = models.ForeignKey(Issues,
                                  on_delete=models.CASCADE,
-                                 blank=True,
-                                 editable=False,
+                                 blank=False,
                                  null=False)
     # a completely modified comment isn't the same. Thus, a last modified
     # timestamps is more adapted.

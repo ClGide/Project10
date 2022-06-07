@@ -53,7 +53,9 @@ class IssueSerializer(serializers.ModelSerializer):
         # the user should enter the project title and the project_id should
         # be filled by the app.
         fields = [
-            "title", "description", "tag", "priority", "project_id", "status",
+            "title", "description",
+            "tag", "priority", "status",
+            "project_id",
             "author_user_id", "assignee_user_id"
         ]
 
