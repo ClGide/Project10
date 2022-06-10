@@ -62,14 +62,15 @@ urlpatterns: list[path] = [
               "delete": "destroy"}
          )),
 
-    # endpoint 15, 16. Respectively retrieve or create one comment.
+    # endpoint 15, 16. Respectively retrieves all issue's comments or
+    # adds a new comment.
     path("projects/issues/<int:pk>/comments",
          views.CommentViewSet.as_view(
              {"get": "get",
               "post": "create"}
          )),
 
-    # endpoint 17, 18. Respectively update or delete one comment.
+    # endpoint 17, 18. Respectively updates or deletes one comment.
     path("projects/issues/comments/<int:pk>",
          views.CommentViewSet.as_view(
              {"put": "update",

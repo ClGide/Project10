@@ -14,7 +14,7 @@ from .models import Project, Issue, Comment, Contributor
 
 
 class UserLoginSerializer(serializers.Serializer):
-    # Used to validate data
+    """Used to validate data."""
     username = serializers.CharField(max_length=32, required=True)
     password = serializers.CharField(max_length=32,
                                      required=True,
@@ -72,9 +72,10 @@ class IssueSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """
+    The only field that doesn't need JSON serialization is created_time
+    because it is automatically filled by Django.
+    """
     class Meta:
-        # author_user_id should be auto filled.
-        # the user should enter the issue title and the app should
-        # find issue_id.
         model = Comment
         fields = ["description", "author_user_id", "issue_id"]

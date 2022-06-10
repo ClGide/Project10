@@ -1,3 +1,5 @@
+"""Used by Django's project setup procedure."""
+
 from django.apps import AppConfig
 
 

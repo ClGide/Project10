@@ -1,12 +1,12 @@
 """
 The default permission is IsAuthenticated. In other words, all below
-serializers will refuse access to unauthenticated users if not explictly
+serializers will refuse access to unauthenticated users if not explicitly
 stated otherwise.
 """
 
-from typing import Union
+from typing import Union, Optional
 
-from django.db.models import QuerySet, Model
+from django.db.models import QuerySet
 from django.contrib.auth import authenticate, logout
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
@@ -14,9 +14,9 @@ from django.forms import ValidationError
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, BasePermission
 from rest_framework.response import Response
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
@@ -31,32 +31,34 @@ from .utils import create_user_account, get_tokens_for_user
 
 
 class AuthViewSet(GenericViewSet):
-    permission_classes = [AllowAny]
-    serializer_class = EmptySerializer
-    serializer_classes = {
+    permission_classes: BasePermission = [AllowAny]
+    serializer_class: Serializer = EmptySerializer
+    serializer_classes: dict[str, ModelSerializer] = {
         "login": UserLoginSerializer,
         "register": UserRegisterSerializer
     }
 
     @action(methods=['POST'], detail=False)
-    def login(self, request):
-        # actions may be intended either for a single obj or the entire
-        # collection. If it's intended for a single obj, set detail to
-        # true, define the pk arg and use it to make the query.
-        # Note that without action our method wouldn't be routable.
-
-        # validate data
-        serializer = self.get_serializer(data=request.data)
+    # actions may be intended either for a single obj or the entire
+    # collection. If it's intended for a single obj, set detail to
+    # true, define the pk arg and use it to make the query.
+    # Note that without action our method wouldn't be routable.
+    def login(self, request) -> Response:
+        """
+        Based on the given request, checks that the data is valid, that the
+        password's the right one, and then creates the access and refresh
+        JWT token to authenticate the user.
+        """
+        serializer: ModelSerializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # checks user exists and has the right password
         username, password = request.data["username"], request.data["password"]
-        user = authenticate(username=username, password=password)
+        user: Optional[User] = authenticate(username=username,
+                                            password=password)
         if user is None:
             raise ValidationError("username/password is false")
 
-        # returns JWT token
-        tokens = get_tokens_for_user(user)
+        tokens: dict[str, str] = get_tokens_for_user(user)
 
         return Response(data=tokens, status=status.HTTP_200_OK)
 
@@ -306,20 +308,35 @@ class IssueViewSet(GenericViewSet):
 
 
 class CommentViewSet(GenericViewSet):
-    serializer_class = CommentSerializer
+    serializer_class: ModelSerializer = CommentSerializer
     http_method_names = ['get', 'post', 'put', 'delete']
 
-    def get(self, request, *args, **kwargs):
-        pk = kwargs["pk"]
-        only_project_contributor_permission(request, pk)
-        queryset = Comment.objects.filter(issue_id=pk)
-        serializer = self.serializer_class(queryset, many=True)
+    def get(self, request, *args, **kwargs) -> Response:
+        """
+        Based on the given issue pk and the request data, checks that the
+        user has read access to comments and if that's the case, returns
+        all Issue's comment. Otherwise, raise PermissionDenied.
+        """
+        pk: int = kwargs["pk"]
+        issue: Issue = Issue.objects.get(id=pk)
+        project: Project = issue.project_id
+        only_project_contributor_permission(request, project.id)
+
+        queryset: QuerySet = Comment.objects.filter(issue_id=pk)
+        serializer: ModelSerializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        pk = kwargs["pk"]
+    def create(self, request, *args, **kwargs) -> Response:
+        """
+        Based on the given issue pk and the request data, checks that the
+        user has create access to comments and if that's the case, perform
+        creation. Otherwise, raise PermissionDenied.
+        """
+        serializer: ModelSerializer = self.serializer_class(data=request.data)
+        pk: int = kwargs["pk"]
+
         only_project_contributor_permission(request, pk)
+
         serializer.initial_data["issue_id"] = pk
         serializer.initial_data["author_user_id"] = request.user.id
         serializer.is_valid(raise_exception=True)
@@ -327,12 +344,20 @@ class CommentViewSet(GenericViewSet):
         return Response(serializer.data,
                         status=status.HTTP_201_CREATED)
 
-    def update(self, request, *args, **kwargs):
-        pk = kwargs["pk"]
-        comment = Comment.objects.get(id=pk)
+    def update(self, request, *args, **kwargs) -> Response:
+        """
+        Based on the given comment pk and the request data, checks that the
+        user has update access to comments and if that's the case, perform
+        update. Otherwise, raise PermissionDenied.
+        """
+        pk: int = kwargs["pk"]
+        comment: Comment = Comment.objects.get(id=pk)
+
         only_obj_author_permission(request, comment)
-        serializer = self.serializer_class(comment, data=request.data,
-                                           partial=True)
+
+        serializer: ModelSerializer = self.serializer_class(comment,
+                                                            data=request.data,
+                                                            partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         if getattr(comment, "_prefetched_objects_cache", None):
@@ -341,9 +366,16 @@ class CommentViewSet(GenericViewSet):
             comment._prefetched_object_cache = {}
         return Response(serializer.data)
 
-    def destroy(self, request, *args, **kwargs):
-        pk = kwargs["pk"]
-        comment = Comment.objects.get(id=pk)
+    def destroy(self, request, *args, **kwargs) -> Response:
+        """
+        Based on the given comment pk and the request data, checks that the
+        user has delete access to comments and if that's the case, perform
+        deletion. Otherwise, raise PermissionDenied.
+        """
+        pk: int = kwargs["pk"]
+        comment: Comment = Comment.objects.get(id=pk)
+
         only_obj_author_permission(request, comment)
+
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

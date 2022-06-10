@@ -29,10 +29,10 @@ class Project(models.Model):
         blank=True,
         max_length=32
     )
-    author_user_id: models.Model = models.ForeignKey(User,
-                                                     null=False,
-                                                     blank=True,
-                                                     on_delete=models.CASCADE)
+    author_user_id: User = models.ForeignKey(User,
+                                             null=False,
+                                             blank=True,
+                                             on_delete=models.CASCADE)
 
 
 class Contributor(models.Model):
@@ -55,8 +55,8 @@ class Contributor(models.Model):
         null=False,
         max_length=32
     )
-    user_id: models.Model = models.ForeignKey(User, on_delete=models.CASCADE)
-    project_id: models.Model = models.ForeignKey(Project, on_delete=models.CASCADE)
+    user_id: User = models.ForeignKey(User, on_delete=models.CASCADE)
+    project_id: Project = models.ForeignKey(Project, on_delete=models.CASCADE)
 
     class Meta:
         """An user shouldn't be part of a project twice."""
@@ -89,9 +89,9 @@ class Issue(models.Model):
         null=False,
         max_length=64
     )
-    project_id: models.Model = models.ForeignKey(Project,
-                                                 on_delete=models.CASCADE,
-                                                 blank=True)
+    project_id: Project = models.ForeignKey(Project,
+                                            on_delete=models.CASCADE,
+                                            blank=True)
     STATUS_CHOICES = [
         ("to-do", "to-do"),
         ("in progress", "in progress"),
@@ -108,15 +108,15 @@ class Issue(models.Model):
     # be a conflict in the reversing. In other words, the related_name
     # is by default set twice to the same value. Thus, User wouldn't know
     # what to do if we didn't manually set related_name.
-    author_user_id: models.Model = models.ForeignKey(User,
-                                                     on_delete=models.CASCADE,
-                                                     null=False,
-                                                     blank=True)
+    author_user_id: User = models.ForeignKey(User,
+                                             on_delete=models.CASCADE,
+                                             null=False,
+                                             blank=True)
     # When the original author becomes the assignee.
-    assignee_user_id: models.Model = models.ForeignKey(User,
-                                                       on_delete=models.CASCADE,
-                                                       default=author_user_id,
-                                                       related_name="assignee")
+    assignee_user_id: User = models.ForeignKey(User,
+                                               on_delete=models.CASCADE,
+                                               default=author_user_id,
+                                               related_name="assignee")
     # An issue is bound to be updated. The useful timestamp is thus a
     # time-created one.
     created_time: datetime.datetime = models.DateTimeField(blank=True,
@@ -124,31 +124,34 @@ class Issue(models.Model):
 
 
 class Comment(models.Model):
-    description = models.CharField(blank=False, max_length=512)
+    description: str = models.CharField(blank=False, max_length=512)
     # A comment is still useful even if the author's account was deleted
-    author_user_id = models.ForeignKey(User,
-                                       blank=False,
-                                       on_delete=models.SET_NULL,
-                                       null=True)
-    issue_id = models.ForeignKey(Issue,
-                                 on_delete=models.CASCADE,
-                                 blank=False,
-                                 null=False)
+    author_user_id: User = models.ForeignKey(User,
+                                             blank=False,
+                                             on_delete=models.SET_NULL,
+                                             null=True)
+    issue_id: Issue = models.ForeignKey(Issue,
+                                        on_delete=models.CASCADE,
+                                        blank=False,
+                                        null=False)
     # a completely modified comment isn't the same. Thus, a last modified
     # timestamps is more adapted.
     created_time = models.DateTimeField(blank=True, auto_now=True)
 
 
 def model_created(**kwargs):
-    # whenever an user creates a project, he becomes the owner of that
-    # project. We thus need a contributor instance with owner privileges.
-    # Initially, before **kwargs there was a sender arg.
-    instance = kwargs["instance"]
+    """
+     Whenever an user creates a project, he becomes the owner of that
+     project. We thus need a contributor instance with permission field
+     set to owner.
+    """
+    instance: Project = kwargs["instance"]
     if kwargs["created"]:
-        owner = Contributor(
+        owner: Contributor = Contributor(
             permission='owner',
             user_id=instance.author_user_id,
-            project_id=instance)
+            project_id=instance
+        )
         owner.save()
 
 
