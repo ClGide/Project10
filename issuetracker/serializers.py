@@ -1,8 +1,16 @@
-from django.contrib.auth.models import User
-from .models import Projects, Issues, Comments, Contributors
-from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+"""
+Serializers have two main goals. The first is to serialize requested data
+from the DB in order to send it through the internet. The second is to
+deserialize JSON data received from the user.
+"""
+
+
 from django.contrib.auth import password_validation
+from django.contrib.auth.models import User
+from django.db.models import Model
+from rest_framework import serializers
+
+from .models import Project, Issue, Comment, Contributor
 
 
 class UserLoginSerializer(serializers.Serializer):
@@ -33,25 +41,28 @@ class EmptySerializer(serializers.Serializer):
 
 
 class ProjectSerializer(serializers.ModelSerializer):
+    """
+    The project table contains an author_user_id column that won't
+    be filled with user data. Thus, it doesn't need JSON serialization.
+    """
     class Meta:
-        model = Projects
+        model: Model = Project
         fields = ["title", "description", "type"]
 
 
 class ContributorSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Contributors
-        # the user should enter the username and the app should
-        # find the user_id. Same for the project_id.
-        fields = ["permission", "user_id", "project_id"]
+        model = Contributor
+        fields = "__all__"
 
 
 class IssueSerializer(serializers.ModelSerializer):
+    """
+    The only field that doesn't need JSON serialization is created_time
+    because it is automatically filled by Django.
+    """
     class Meta:
-        model = Issues
-        # author_user_id should be auto filled.
-        # the user should enter the project title and the project_id should
-        # be filled by the app.
+        model = Issue
         fields = [
             "title", "description",
             "tag", "priority", "status",
@@ -65,5 +76,5 @@ class CommentSerializer(serializers.ModelSerializer):
         # author_user_id should be auto filled.
         # the user should enter the issue title and the app should
         # find issue_id.
-        model = Comments
+        model = Comment
         fields = ["description", "author_user_id", "issue_id"]

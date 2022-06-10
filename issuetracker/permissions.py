@@ -1,5 +1,5 @@
 from rest_framework.exceptions import PermissionDenied
-from issuetracker.models import Contributors
+from issuetracker.models import Contributor
 
 
 def only_obj_author_permission(request, obj):
@@ -8,7 +8,7 @@ def only_obj_author_permission(request, obj):
 
 
 def only_project_contributor_permission(request, project_id):
-    contributors = Contributors.objects.filter(
+    contributors = Contributor.objects.filter(
         project_id=project_id
     )
     contributors_user = [contributor.user_id for contributor in
