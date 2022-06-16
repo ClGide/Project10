@@ -14,30 +14,40 @@ from .models import Project, Issue, Comment, Contributor
 
 
 class UserLoginSerializer(serializers.Serializer):
-    """Used to validate data."""
-    username = serializers.CharField(max_length=32, required=True)
-    password = serializers.CharField(max_length=32,
-                                     required=True,
-                                     write_only=True)
+    """
+    Ensures user's input is valid. Doesn't ensure the user exists or the
+    password's right but only that the input respects some basic constraints.
+    """
+    username: str = serializers.CharField(max_length=32, required=True)
+    password: str = serializers.CharField(max_length=32,
+                                          required=True,
+                                          write_only=True)
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
+    """
+    Checks that values inputted for user's fields respects minimum constraints.
+    """
     class Meta:
         model = User
         fields = ["username", "first_name", "last_name", "email", "password"]
 
     @staticmethod
-    def validate_password(value):
-        # if you define a method named validate_<field_name>,
+    def validate_password(value) -> str:
+        # If you define a method named validate_<field_name>,
         # django will use the return value as the value of that
         # field.
-        print(f"value in serializer: {value}")
         password_validation.validate_password(value)
         return value
 
 
 class EmptySerializer(serializers.Serializer):
-    pass
+    """
+    Used in views.AuthViewSet. The view inherits GenericViewSet, a class that
+    requires a serializer_class field. But the logic we used there only uses
+    the serializer_classes field. Thus, we needed a serializer that accepts
+    nothing to be sure the required field is never used.
+    """
 
 
 class ProjectSerializer(serializers.ModelSerializer):

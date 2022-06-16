@@ -114,6 +114,8 @@ class Issue(models.Model):
                                              blank=True)
     # When the original author becomes the assignee.
     assignee_user_id: User = models.ForeignKey(User,
+                                               blank=True,
+                                               null=False,
                                                on_delete=models.CASCADE,
                                                default=author_user_id,
                                                related_name="assignee")
@@ -142,8 +144,8 @@ class Comment(models.Model):
 def model_created(**kwargs):
     """
      Whenever an user creates a project, he becomes the owner of that
-     project. We thus need a contributor instance with permission field
-     set to owner.
+     project. We thus create a contributor instance with the permission
+     field set to owner.
     """
     instance: Project = kwargs["instance"]
     if kwargs["created"]:

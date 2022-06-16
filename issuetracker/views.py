@@ -31,6 +31,12 @@ from .utils import create_user_account, get_tokens_for_user
 
 
 class AuthViewSet(GenericViewSet):
+    """
+    The serializer_class field isn't used. It's implemented because
+    is required by GenericViewSet. The two serializers we use are
+    defined in serializer_classes. They are accessed by self.get_serializer()
+    via self.get_serializer_class().
+    """
     permission_classes: BasePermission = [AllowAny]
     serializer_class: Serializer = EmptySerializer
     serializer_classes: dict[str, ModelSerializer] = {
@@ -63,22 +69,31 @@ class AuthViewSet(GenericViewSet):
         return Response(data=tokens, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False)
-    def register(self, request):
-        serializer = self.get_serializer(data=request.data)
+    def register(self, request) -> Response:
+        """
+        Checks that the given request data is valid for the creation of a new
+        User. If that's the case, creates the user. Otherwise, raises
+        ValidationErrors.
+        """
+        serializer: ModelSerializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = create_user_account(**serializer.validated_data)
-        tokens = get_tokens_for_user(user)
+        user: Optional[User] = create_user_account(**serializer.validated_data)
+        tokens: dict[str, str] = get_tokens_for_user(user)
         return Response(data=tokens,
                         status=status.HTTP_201_CREATED)
 
     @action(methods=['POST'], detail=False)
-    def logout(self, request):
+    def logout(self, request) -> Response:
+        """
+        Might be used in a better version of the project. Should invalidate
+        user's tokens.
+        """
         logout(request)
         data = {"success": "successfully logged out"}
         return Response(data=data, status=status.HTTP_200_OK)
 
-    def get_serializer_class(self):
-        # called behind the scenes by self.get_serializer().
+    def get_serializer_class(self) -> ModelSerializer:
+        """Called behind the scenes by self.get_serializer()."""
         if not isinstance(self.serializer_classes, dict):
             raise ImproperlyConfigured("serializer_classes should be "
                                        "a dict mapping")
@@ -259,11 +274,16 @@ class IssueViewSet(GenericViewSet):
 
         only_project_contributor_permission(request, pk)
 
-        assignee_username: str = request.data["assignee_username"]
-        assignee_user: User = User.objects.get(username=assignee_username)
         serializer.initial_data["project_id"]: int = pk
         serializer.initial_data["author_user_id"]: int = request.user.id
-        serializer.initial_data["assignee_user_id"]: int = assignee_user.id
+
+        # assignee_user_id is an optional field
+        if "assignee_username" in request.data:
+
+            assignee_username: str = request.data["assignee_username"]
+            assignee_user: User = User.objects.get(username=assignee_username)
+            serializer.initial_data["assignee_user_id"]: int = assignee_user.id
+
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data,

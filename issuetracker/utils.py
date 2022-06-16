@@ -27,3 +27,4 @@ def get_tokens_for_user(user) -> dict[str, str]:
         "refresh": str(refresh),
         "acess": str(refresh.access_token)
     }
+

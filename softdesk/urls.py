@@ -16,7 +16,7 @@ router.register("", views.AuthViewSet, basename="auth")
 
 urlpatterns: list[path] = [
     # endpoint 3. Lists all projects in the DB
-    path("projects/list_projects",
+    path("projects",
          views.ListProjectLoggedInUser.as_view()),
 
     # endpoint 4. Creates new project.
