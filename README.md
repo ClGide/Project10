@@ -1,4 +1,4 @@
-# Dillinger
+# CONTEXT
 
 This repository is the project 10 of my Open Classrooms path. The story is that I am building the backend for an issuetracking software. My job was to code endpoints that front end developpers would use to build Web, Android and iOS UI. Those endpoints enabled users to register and  authenticate via JWT tokens. They also enabled the storing of various items (projects, issues, comments) in a secure way. In other words, users can successfuly modify the database only if they have the corresponding authorizations. 
 
